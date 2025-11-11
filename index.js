@@ -92,6 +92,22 @@ async function run() {
       }
     });
 
+    app.get("/habit-category", async (req, res) => {
+      const category = req.query.category;
+      console.log(category);
+      const query = { category: category };
+      const result = await habitCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/habit-search", async (req, res) => {
+      const search = req.query.search;
+      // console.log(search);
+      const query = { title: { $regex: search, $options: "i" } };
+      const result = await habitCollection.find(query).toArray();
+      res.send(result);
+    });
+
     app.post("/habit-info", async (req, res) => {
       const newHabit = req.body;
       const result = await habitCollection.insertOne(newHabit);
