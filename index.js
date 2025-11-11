@@ -57,6 +57,41 @@ async function run() {
       }
     });
 
+    app.get("/mark-complete/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const userEmail = req.query.userEmail;
+        console.log(userEmail);
+        const habit = await habitCollection.findOne({ _id: new ObjectId(id) });
+        if (!habit) {
+          return res.status(404).send({ message: "Habit not found" });
+        }
+        if (habit.userEmail !== userEmail) {
+          return res
+            .status(400)
+            .send({ message: "You are not allowed to mark this habit" });
+        }
+        // console.log(habit);
+        const today = new Date().toLocaleDateString();
+        if (habit.completionHistory.includes(today)) {
+          return res
+            .status(400)
+            .send({ message: "Already marked complete today" });
+        }
+        const result = await habitCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $push: { completionHistory: today } }
+        );
+        res.send({
+          message: "Habit marked as complete successfully!",
+          habit: result,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: "Server error", error });
+      }
+    });
+
     app.post("/habit-info", async (req, res) => {
       const newHabit = req.body;
       const result = await habitCollection.insertOne(newHabit);
