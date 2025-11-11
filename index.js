@@ -66,11 +66,11 @@ async function run() {
         if (!habit) {
           return res.status(404).send({ message: "Habit not found" });
         }
-        if (habit.userEmail !== userEmail) {
-          return res
-            .status(400)
-            .send({ message: "You are not allowed to mark this habit" });
-        }
+        // if (habit.userEmail !== userEmail) {
+        //   return res
+        //     .status(400)
+        //     .send({ message: "You are not allowed to mark this habit" });
+        // }
         // console.log(habit);
         const today = new Date().toLocaleDateString();
         if (habit.completionHistory.includes(today)) {
