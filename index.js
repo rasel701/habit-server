@@ -30,11 +30,28 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-
-const verifyUser =async(req,res,next)=>{
-
-
-}
+const verifyUser = async (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res
+      .status(401)
+      .send({ message: "Unauthorized access: Authorization header missing" });
+  }
+  const token = authorization.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({
+      message:
+        "Unauthorized access: Bearer token is malformed or not provided.",
+    });
+  }
+  try {
+    const userInfo = await admin.auth().verifyIdToken(token);
+    req.buyer_email = userInfo.email;
+    next();
+  } catch (error) {
+    res.status(401).send({ message: "unauthorized access" });
+  }
+};
 
 async function run() {
   try {
@@ -162,7 +179,17 @@ async function run() {
       }
     });
 
-    app.delete("/habit-info/:id", async (req, res) => {
+    app.delete("/habit-info/:id", verifyUser, async (req, res) => {
+      const buyer_email = req.buyer_email;
+      const userEmail = req.query.email;
+      console.log("User email ", userEmail);
+      console.log(buyer_email);
+      if (buyer_email !== userEmail) {
+        return res.status(403).send({
+          message:
+            "Access Forbidden: You are not authorized to access this resource",
+        });
+      }
       const id = req.params.id;
       const query = {};
       if (id) {
