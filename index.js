@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
+const admin = require("firebase-admin");
+
+const serviceAccount = require("./habit-tracker-3cdcd-firebase-adminsdk.json");
 require("dotenv").config();
 const app = express();
 const port = 3000;
@@ -21,6 +25,16 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+
+const verifyUser =async(req,res,next)=>{
+
+
+}
 
 async function run() {
   try {
