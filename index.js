@@ -55,9 +55,24 @@ const verifyUser = async (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("habit-tracker-db");
     const habitCollection = db.collection("habit-info");
+
+    app.get("/my-habit/dashboard", async () => {
+      const email = req.query.email;
+      const query = {};
+      if (email) {
+        query.userEmail = email;
+      }
+      try {
+        const result = await habitCollection.find(query).toArray();
+        res.status(200).json(result);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
 
     app.get("/habit-info", async (req, res) => {
       const result = await habitCollection.find().toArray();
@@ -205,7 +220,7 @@ async function run() {
       }
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );

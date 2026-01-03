@@ -1,3 +1,4 @@
 node_modules
 .env
 habit-tracker-3cdcd-firebase-adminsdk.json
+.vercel
