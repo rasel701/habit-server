@@ -59,15 +59,67 @@ async function run() {
     const db = client.db("habit-tracker-db");
     const habitCollection = db.collection("habit-info");
 
-    app.get("/my-habit/dashboard", async () => {
+    app.get("/my-habit/dashboard", async (req, res) => {
       const email = req.query.email;
-      const query = {};
-      if (email) {
-        query.userEmail = email;
+
+      if (!email) {
+        return res.status(400).json({ message: "Email query missing" });
       }
+
       try {
-        const result = await habitCollection.find(query).toArray();
-        res.status(200).json(result);
+        const result = await habitCollection
+          .aggregate([
+            { $match: { userEmail: email } },
+            {
+              $group: {
+                _id: null, // total stats
+                totalHabits: { $sum: 1 },
+                completedHabits: {
+                  $sum: {
+                    $cond: [
+                      { $gt: [{ $size: "$completionHistory" }, 0] },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+                pendingHabits: {
+                  $sum: {
+                    $cond: [
+                      { $eq: [{ $size: "$completionHistory" }, 0] },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+              },
+            },
+          ])
+          .toArray();
+
+        const categoryStats = await habitCollection
+          .aggregate([
+            { $match: { userEmail: email } },
+            { $group: { _id: "$category", count: { $sum: 1 } } },
+          ])
+          .toArray();
+
+        res.status(200).json({
+          overview: result[0] || {},
+          categoryStats,
+        });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server error" });
+      }
+    });
+
+    app.get("/dashboard/category-status", async (req, res) => {
+      try {
+        const categoryStatus = await habitCollection
+          .aggregate([{ $group: { _id: "$category", count: { $sum: 1 } } }])
+          .toArray();
+        res.status(200).json(categoryStatus);
       } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server error" });
