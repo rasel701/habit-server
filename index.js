@@ -126,16 +126,74 @@ async function run() {
       }
     });
 
+    app.get("/popular-habit", async (req, res) => {
+      try {
+        const popularHabit = await habitCollection
+          .aggregate([
+            {
+              $addFields: {
+                completedCount: { $size: "$completionHistory" },
+              },
+            },
+            {
+              $sort: { completedCount: -1 },
+            },
+            {
+              $limit: 5,
+            },
+          ])
+          .toArray();
+        res.status(200).json(popularHabit);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Something went wrong" });
+      }
+    });
+
+    app.get("/weekly-summary", async (req, res) => {
+      try {
+        const today = new Date();
+
+        const last7Days = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(today.getDate() - i);
+          return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+        });
+
+        const habits = await habitCollection.find({}).toArray();
+
+        const weeklyData = habits.map((habit) => {
+          const completedThisWeek = habit.completionHistory.filter((date) =>
+            last7Days.includes(date)
+          );
+          return {
+            title: habit.title,
+            category: habit.category,
+            completedThisWeek,
+            streak: completedThisWeek.length,
+          };
+        });
+
+        res.status(200).json({ weeklyData, last7Days });
+      } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Something went wrong" });
+      }
+    });
+
     app.get("/habit-info", async (req, res) => {
-      const result = await habitCollection.find().toArray();
+      const result = await habitCollection
+        .find()
+        .sort({ createAt: 1 })
+        .toArray();
       res.send(result);
     });
 
     app.get("/habit-latest", async (req, res) => {
       const result = await habitCollection
         .find()
-        .sort({ createAt: -1 })
-        .limit(6)
+        .sort({ createAt: 1 })
+        .limit(8)
         .toArray();
       res.send(result);
     });
